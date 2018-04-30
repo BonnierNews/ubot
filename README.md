@@ -2,7 +2,7 @@
 
 ## Hacking
 
-`cd plugins/ && ./build-plugins.sh && cd ../ && go build . && ./ubot` 
+`./build-plugins.sh && go build . && ./ubot` 
 
 
 More docs TODO
