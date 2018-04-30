@@ -175,9 +175,6 @@ func Execute() {
 	defer cancel()
 	app.Version("0.0.1")
 	app.UsageTemplate(kingpin.CompactUsageTemplate)
-	app.Flag("alertmanager.url", "Alertmanager to talk to").
-		OverrideDefaultFromEnvar("ALERTMANAGER_URL").
-		Default("http://localhost:9093").URLVar(&alertmanagerURL)
 	slackToken := app.Flag("slack.token", "Slack token").
 		Required().
 		OverrideDefaultFromEnvar("SLACK_TOKEN").
@@ -186,9 +183,6 @@ func Execute() {
 		OverrideDefaultFromEnvar("PLUGIN_DIR").
 		Default("./plugins").
 		String()
-	pluginDisable := app.Flag("plugin.disable", "Plugins to disable, may be used several times").
-		NoEnvar().
-		Strings()
 	app.HelpFlag.Short('h')
 	_, err := app.Parse(os.Args[1:])
 	if err != nil {
@@ -199,7 +193,6 @@ func Execute() {
 	bot := New()
 	bot.pluginsDir = *pluginDir
 	bot.Init(ctx)
-	log.Infof("Plugins disabled: %s", *pluginDisable)
 	api := slack.New(*slackToken)
 	rtm := api.NewRTM()
 	go rtm.ManageConnection()
@@ -236,29 +229,4 @@ Loop:
 			}
 		}
 	}
-}
-
-func loadPlugin(p string) (s string, err error) {
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		log.Error("Unable to open plugins directory (./plugins)")
-		return "Unkown command", err
-	}
-	plug, err := plugin.Open(p)
-	if err != nil {
-		log.Errorf("Error opening plugin", err)
-		return fmt.Sprintf("Error opening plugin %s", p), err
-	}
-	symUbotPlugin, err := plug.Lookup("UbotPlugin")
-	if err != nil {
-		log.Errorf("Error looking up ubot plugin symbol", err)
-		return "Error starting plugin", err
-	}
-	var ubotPlugin UbotPlugin
-	ubotPlugin, ok := symUbotPlugin.(UbotPlugin)
-	if !ok {
-		log.Error("Unexpected type from plugin symbol")
-		return "Unexpected typ from plugin symbol", err
-	}
-	ubotPlugin.RunPlugin()
-	return "Success", nil
 }
