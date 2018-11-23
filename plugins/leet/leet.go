@@ -20,14 +20,24 @@ func (t leetCmd) Name() string      { return string(t) }
 func (t leetCmd) Usage() string     { return fmt.Sprintf("Usage: %s <text>", t.Name()) }
 func (t leetCmd) ShortDesc() string { return `prints leet of <text>` }
 func (t leetCmd) LongDesc() string  { return t.ShortDesc() }
-func (t leetCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) (string, slack.PostMessageParameters, error) {
+func (t leetCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) ([]api.UbotReturn, error) {
 	log.Errorf("running leet on: %s", ev.Text)
+	ret := make([]api.UbotReturn, 0, 1)
 	args, _ := api.GetArgs(ev.Text, t.Name(), info.User.ID)
 	leet, err := formatifier.ToLeet(args)
 	if err != nil {
-		return "Unable to leetify", slack.PostMessageParameters{}, nil
+		msg := "Unable to leetify"
+		ret = append(ret, api.UbotReturn{
+			Message:           msg,
+			MessageParameters: slack.PostMessageParameters{},
+		})
+		return ret, nil
 	}
-	return leet, slack.PostMessageParameters{}, nil
+	ret = append(ret, api.UbotReturn{
+		Message:           leet,
+		MessageParameters: slack.PostMessageParameters{},
+	})
+	return ret, nil
 }
 
 type morseCmd string
@@ -36,21 +46,29 @@ func (t morseCmd) Name() string      { return string(t) }
 func (t morseCmd) Usage() string     { return fmt.Sprintf("Usage: %s <text>", t.Name()) }
 func (t morseCmd) ShortDesc() string { return `prints morse code from <text>` }
 func (t morseCmd) LongDesc() string  { return t.ShortDesc() }
-func (t morseCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) (string, slack.PostMessageParameters, error) {
+func (t morseCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) ([]api.UbotReturn, error) {
 	log.Errorf("running morse on: %s", ev.Text)
+	ret := make([]api.UbotReturn, 0, 1)
 	args, _ := api.GetArgs(ev.Text, t.Name(), info.User.ID)
 	morse, err := formatifier.ToMorseCode(args)
 	if err != nil {
-		return "Unable to morse code", slack.PostMessageParameters{}, nil
+		msg := "Unable to morse code"
+		ret = append(ret, api.UbotReturn{
+			Message:           msg,
+			MessageParameters: slack.PostMessageParameters{},
+		})
+		return ret, nil
 	}
-	return fmt.Sprintf("`%s`", morse), slack.PostMessageParameters{}, nil
+	ret = append(ret, api.UbotReturn{
+		Message:           morse,
+		MessageParameters: slack.PostMessageParameters{},
+	})
+	return ret, nil
 }
 
 type leetCmds struct{}
 
 func (t *leetCmds) Init(ctx context.Context) error {
-	//out := ctx.Value("gosh.stdout").(io.Writer)
-	//fmt.Fprintln(out, "test module loaded OK")
 	log.Info("Loaded leet-pirate plugin")
 	return nil
 }

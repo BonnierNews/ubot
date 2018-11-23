@@ -11,6 +11,12 @@ const (
 	SymbolName = "UbotCommands"
 )
 
+// UbotReturn a slice of Slack messages
+type UbotReturn struct {
+	Message           string
+	MessageParameters slack.PostMessageParameters
+}
+
 // UbotModule a plugin that can be initialized
 type UbotModule interface {
 	Init(context.Context) error
@@ -22,7 +28,7 @@ type UbotCommand interface {
 	Usage() string
 	ShortDesc() string
 	LongDesc() string
-	Exec(context.Context, *slack.MessageEvent, *slack.Info) (string, slack.PostMessageParameters, error)
+	Exec(context.Context, *slack.MessageEvent, *slack.Info) ([]UbotReturn, error)
 }
 
 // UbotCommands a plugin that contains one or more command

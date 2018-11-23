@@ -121,14 +121,19 @@ Use {{"help <command>"| code}} for help on each command`
 	}
 }
 
-func (bot *Ubot) handle(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) (string, slack.PostMessageParameters, error) {
+func (bot *Ubot) handle(ctx context.Context, ev *slack.MessageEvent, info *slack.Info) ([]api.UbotReturn, error) {
+	var ret []api.UbotReturn
 	prefix := fmt.Sprintf("<@%s> ", info.User.ID)
 	line := strings.TrimPrefix(ev.Text, prefix)
 	line = strings.TrimSpace(line)
 	line = strings.ToLower(line)
 	if line == "" || strings.HasPrefix(line, "help") {
 		help, _ := bot.help(line)
-		return help, slack.PostMessageParameters{}, nil
+		ret = append(ret, api.UbotReturn{
+			Message:           help,
+			MessageParameters: slack.PostMessageParameters{},
+		})
+		return ret, nil
 	}
 	args := reCmd.FindAllString(line, -1)
 	if args != nil {
@@ -136,12 +141,20 @@ func (bot *Ubot) handle(ctx context.Context, ev *slack.MessageEvent, info *slack
 		cmd, ok := bot.commands[cmdName]
 		if !ok {
 			log.Errorf("help command not found: %s", cmdName)
-			return "", slack.PostMessageParameters{}, fmt.Errorf("Command not found: %s", cmdName)
+			ret = append(ret, api.UbotReturn{
+				Message:           "",
+				MessageParameters: slack.PostMessageParameters{},
+			})
+			return ret, fmt.Errorf("Command not found: %s", cmdName)
 		}
 		log.Infof("Handled command, using: %s", cmd)
 		return cmd.Exec(ctx, ev, info)
 	}
-	return "", slack.PostMessageParameters{}, fmt.Errorf("Unable to parse command line: %s", line)
+	ret = append(ret, api.UbotReturn{
+		Message:           "",
+		MessageParameters: slack.PostMessageParameters{},
+	})
+	return ret, fmt.Errorf("Unable to parse command line: %s", line)
 }
 
 func listFiles(dir, pattern string) ([]os.FileInfo, error) {
@@ -195,6 +208,7 @@ func Execute() {
 	bot.Init(ctx)
 	api := slack.New(*slackToken)
 	rtm := api.NewRTM()
+	rtm.GetBotInfo("ubot")
 	go rtm.ManageConnection()
 Loop:
 	for {
@@ -210,11 +224,13 @@ Loop:
 				prefix := fmt.Sprintf("<@%s> ", info.User.ID)
 				if ev.User != info.User.ID && strings.HasPrefix(ev.Text, prefix) {
 					info := rtm.GetInfo()
-					text, _, err := bot.handle(ctx, ev, info)
+					ret, err := bot.handle(ctx, ev, info)
 					if err != nil {
 						log.Errorf("%v", err)
 					}
-					rtm.SendMessage(rtm.NewOutgoingMessage(text, ev.Channel))
+					for _, msgReturn := range ret {
+						rtm.SendMessage(rtm.NewOutgoingMessage(msgReturn.Message, ev.Channel))
+					}
 				}
 
 			case *slack.RTMError:
