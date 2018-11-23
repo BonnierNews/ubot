@@ -69,6 +69,10 @@ func (t morseCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.
 type leetCmds struct{}
 
 func (t *leetCmds) Init(ctx context.Context) error {
+	_, err := api.GetEnv("UBOT_ENABLE_LEET", "")
+	if err != nil {
+		return err
+	}
 	log.Info("Loaded leet-pirate plugin")
 	return nil
 }

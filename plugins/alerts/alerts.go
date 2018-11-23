@@ -160,11 +160,11 @@ func (t alertCmd) Exec(ctx context.Context, ev *slack.MessageEvent, info *slack.
 type alertCmds struct{}
 
 func (t *alertCmds) Init(ctx context.Context) error {
-	log.Info("Loading alerts plugin")
 	_, err := api.GetEnv("ALERTMANAGER_URL", "")
 	if err != nil {
 		return err
 	}
+	log.Info("Loading alerts plugin")
 	return nil
 }
 
